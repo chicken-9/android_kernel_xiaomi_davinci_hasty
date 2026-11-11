@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -38,7 +38,7 @@ jobs:
           zip -r9 ../kernel-davinci.zip *
 
       - name: Upload flashable zip
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kernel-davinci-zip
           path: kernel-davinci.zip
