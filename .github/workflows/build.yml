@@ -1,0 +1,44 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential curl flex git libssl-dev libncurses5-dev zip
+
+      - name: Download clang toolchain
+        run: |
+          mkdir -p clang
+          curl -L https://releases.llvm.org/14.0.0/clang+llvm-14.0.0-aarch64-linux-gnu.tar.xz | tar -xJ -C clang --strip-components=1
+
+      - name: Build kernel
+        run: |
+          export ARCH=arm64
+          export PATH=$PWD/clang/bin:$PATH
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          make O=out ARCH=arm64 vendor/davinci_defconfig
+          make O=out ARCH=arm64 -j$(nproc) CC=clang
+
+      - name: Package with AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
+          cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+          cd AnyKernel3
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/' anykernel.sh
+          zip -r9 ../kernel-davinci.zip *
+
+      - name: Upload flashable zip
+        uses: actions/upload-artifact@v3
+        with:
+          name: kernel-davinci-zip
+          path: kernel-davinci.zip
